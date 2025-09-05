@@ -1,20 +1,18 @@
 pipeline {
   agent any
-  tools { nodejs 'NodeJS' }   // must match the NodeJS tool name you configured in Jenkins
+  tools { nodejs 'NodeJS' }
 
   environment {
-    ARTIFACT_NAME       = 'app.zip'
-    AZURE_WEBAPP_NAME   = 'luckywebapp'   // your App Service name
-    AZURE_RESOURCE_GROUP= 'lucky'         // your Resource Group
+    ARTIFACT_NAME        = 'app.zip'
+    AZURE_WEBAPP_NAME    = 'luckywebapp'
+    AZURE_RESOURCE_GROUP = 'lucky'
   }
 
   stages {
-    // NOTE: No explicit "Checkout from Git" stage.
-    // Jenkins already did "Declarative: Checkout SCM" using your job's SCM + credentials.
+    // No explicit checkout stage – Jenkins already did "Declarative: Checkout SCM"
 
     stage('Install Dependencies') {
       steps {
-        // Prefer reproducible installs; fall back to npm install if no lockfile
         sh 'npm ci || npm install'
       }
     }
@@ -28,13 +26,6 @@ pipeline {
     stage('Publish Artifact') {
       steps {
         archiveArtifacts artifacts: "${ARTIFACT_NAME}", fingerprint: true
-      }
-    }
-
-    // Optional (you can delete this if build+deploy are in the same job)
-    stage('Download Artifact') {
-      steps {
-        copyArtifacts projectName: env.JOB_NAME, filter: "${ARTIFACT_NAME}", fingerprintArtifacts: true
       }
     }
 
@@ -54,5 +45,7 @@ pipeline {
         sh 'echo "Deploying $ARTIFACT_NAME to $AZURE_WEBAPP_NAME" && az webapp deployment source config-zip --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_WEBAPP_NAME --src $ARTIFACT_NAME'
       }
     }
+  }
+}
   }
 }
