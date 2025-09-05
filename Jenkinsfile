@@ -5,12 +5,12 @@ pipeline {
 
   environment {
     ARTIFACT_NAME        = 'app.zip'
-    AZURE_WEBAPP_NAME    = 'luckywebapp'
-    AZURE_RESOURCE_GROUP = 'lucky'
+    AZURE_WEBAPP_NAME    = 'luckywebapp'   // your App Service name
+    AZURE_RESOURCE_GROUP = 'lucky-rg'      // updated resource group name
   }
 
   stages {
-    // Jenkins already did "Declarative: Checkout SCM" before stages start.
+    // Jenkins automatically does "Declarative: Checkout SCM"
 
     stage('Install Dependencies') {
       steps {
@@ -43,7 +43,7 @@ pipeline {
 
     stage('Deploy to Azure Web App') {
       steps {
-        sh 'echo "Deploying $ARTIFACT_NAME to $AZURE_WEBAPP_NAME" && az webapp deployment source config-zip --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src "$ARTIFACT_NAME"'
+        sh 'echo "Deploying $ARTIFACT_NAME to $AZURE_WEBAPP_NAME in $AZURE_RESOURCE_GROUP" && az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src-path "$ARTIFACT_NAME" --type zip'
       }
     }
   }
