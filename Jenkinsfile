@@ -1,32 +1,37 @@
 pipeline {
   agent any
-  tools { nodejs 'NodeJS' }   // must match NodeJS tool name in Jenkins
+  tools { nodejs 'NodeJS' }   // must match the NodeJS tool name you configured in Jenkins
 
   environment {
-    ARTIFACT_NAME = 'app.zip'
-    AZURE_WEBAPP_NAME = 'luckywebapp'         // your App Service name
-    AZURE_RESOURCE_GROUP = 'lucky'            // your Resource Group name
+    ARTIFACT_NAME       = 'app.zip'
+    AZURE_WEBAPP_NAME   = 'luckywebapp'   // your App Service name
+    AZURE_RESOURCE_GROUP= 'lucky'         // your Resource Group
   }
 
   stages {
-    stage('Checkout from Git') {
+    // NOTE: No explicit "Checkout from Git" stage.
+    // Jenkins already did "Declarative: Checkout SCM" using your job's SCM + credentials.
+
+    stage('Install Dependencies') {
       steps {
-        git branch: 'main', url: 'https://github.com/SheralRichard/msdocs-nodejs-mongodb.git'
+        // Prefer reproducible installs; fall back to npm install if no lockfile
+        sh 'npm ci || npm install'
       }
     }
 
-    stage('Install Dependencies') {
-      steps { sh 'npm install' }
-    }
-
     stage('Package App') {
-      steps { sh 'zip -r $ARTIFACT_NAME .' }
+      steps {
+        sh 'zip -r $ARTIFACT_NAME .'
+      }
     }
 
     stage('Publish Artifact') {
-      steps { archiveArtifacts artifacts: "${ARTIFACT_NAME}", fingerprint: true }
+      steps {
+        archiveArtifacts artifacts: "${ARTIFACT_NAME}", fingerprint: true
+      }
     }
 
+    // Optional (you can delete this if build+deploy are in the same job)
     stage('Download Artifact') {
       steps {
         copyArtifacts projectName: env.JOB_NAME, filter: "${ARTIFACT_NAME}", fingerprintArtifacts: true
