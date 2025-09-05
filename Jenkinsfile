@@ -1,6 +1,7 @@
 pipeline {
   agent any
-  tools { nodejs 'NodeJS' }
+
+  tools { nodejs 'NodeJS' }  // must match the NodeJS tool name you configured in Jenkins
 
   environment {
     ARTIFACT_NAME        = 'app.zip'
@@ -9,7 +10,7 @@ pipeline {
   }
 
   stages {
-    // No explicit checkout stage – Jenkins already did "Declarative: Checkout SCM"
+    // Jenkins already did "Declarative: Checkout SCM" before stages start.
 
     stage('Install Dependencies') {
       steps {
@@ -19,7 +20,7 @@ pipeline {
 
     stage('Package App') {
       steps {
-        sh 'zip -r $ARTIFACT_NAME .'
+        sh 'zip -r "$ARTIFACT_NAME" .'
       }
     }
 
@@ -35,17 +36,21 @@ pipeline {
           usernamePassword(credentialsId: 'azure-sp', usernameVariable: 'AZURE_APP_ID', passwordVariable: 'AZURE_PASSWORD'),
           string(credentialsId: 'azure-tenant', variable: 'AZURE_TENANT')
         ]) {
-          sh 'az login --service-principal -u $AZURE_APP_ID -p $AZURE_PASSWORD --tenant $AZURE_TENANT'
+          sh 'az login --service-principal -u "$AZURE_APP_ID" -p "$AZURE_PASSWORD" --tenant "$AZURE_TENANT"'
         }
       }
     }
 
     stage('Deploy to Azure Web App') {
       steps {
-        sh 'echo "Deploying $ARTIFACT_NAME to $AZURE_WEBAPP_NAME" && az webapp deployment source config-zip --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_WEBAPP_NAME --src $ARTIFACT_NAME'
+        sh 'echo "Deploying $ARTIFACT_NAME to $AZURE_WEBAPP_NAME" && az webapp deployment source config-zip --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --src "$ARTIFACT_NAME"'
       }
     }
   }
-}
+
+  post {
+    always {
+      echo 'Pipeline finished.'
+    }
   }
 }
